@@ -46,8 +46,10 @@ Before running the application, you must configure the `config.yaml` file locate
 authorization-bearer: ""
 client-token: ""
 
-artist: ""
-playlist-to-add-to: ""
+artists:
+    - exampleId
+
+playlist-to-add-to: exampleId
 ```
 
 ### Step 1: Extract Credentials (authorization-bearer & client-token)
