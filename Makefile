@@ -10,7 +10,8 @@ all:
 		echo "$(buildDir) does not exist, creating..."; \
 		mkdir $(buildDir); \
 	fi; \
-	g++ $(classes)/*.cpp -o $(buildDir)/AddiFy -lcurl -lyaml-cpp -I/usr/include -std=c++20;
+	g++ $(classes)/*.cpp -o $(buildDir)/AddiFy -lcurl -lyaml-cpp -I/usr/include -std=c++20; \
+	g++ $(classes)/*.cpp -o $(buildDir)/AddiFy.exe -lcurl -lyaml-cpp -I/usr/include -std=c++20;
 
 clean:
 	ls $(buildDir) 2>/dev/null; \
