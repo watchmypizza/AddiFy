@@ -122,7 +122,7 @@ Follow the exact same workflow from Step 2 on your target playlist.
 
 * From Link: `http://open.spotify.com/playlist/0JOAYyVJHTg45SeORIAOhL?si=xxx` → Extract `0JOAYyVJHTg45SeORIAOhL`
 
-* From URI: `spotify:playlist:0JOAYyVJHTg45SeORIAOhL` → Extract `0JOAYyVJHTg45SeORIAOhLPaste`
+* From URI: `spotify:playlist:0JOAYyVJHTg45SeORIAOhL` → Extract `0JOAYyVJHTg45SeORIAOhL`
 
 Paste this value into the `playlist-to-add-to:` field in your `config.yaml`.
 
