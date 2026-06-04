@@ -13,6 +13,24 @@ This tool interacts with internal/undocumented endpoints and technically violate
 
 ---
 
+## 🪟 Windows Users
+
+> [!Important]
+> **Running AddiFy on WINDOWS??!**
+>
+> First of all, no I do not support this behaviour. Second of all, embrace the penguin and download Windows Subsystem for Linux (WSL). A tutorial can be found [here](https://www.youtube.com/watch?v=QM3mzEJCzjY&vl=en). After installing WSL, follow the linux installation guide.
+
+### Commands you will need:
+```sh
+touch
+mkdir
+git
+cd
+mv # Optional if you want to rename example-config.yaml to config.yaml
+nano
+./AddiFy # duh
+```
+
 ## 🎯 Benchmark
 
 This tool was benchmarked against Buckethead's massive discography. With the `render-ahead-limit` config option set to **437**, the script successfully fetched all albums, singles, and tracks in approximately **6 - 7 minutes**.
