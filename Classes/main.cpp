@@ -17,11 +17,16 @@
 
 using json = nlohmann::json;
 
+YAML::Node configFile;
+
 // load yaml
-YAML::Node loadYaml(std::string& path) {
+YAML::Node loadYaml(const std::string& path) {
+    if(!configFile.IsNull()) {
+        return configFile;
+    }
     try {
-        YAML::Node yamlFile = YAML::LoadFile(path);
-        return yamlFile;
+        configFile = YAML::LoadFile(path);
+        return configFile;
     } catch(YAML::Exception& e) {
         std::cerr << "Error parsing YAML file: " << e.what() << std::endl;
         return YAML::Node();
@@ -114,12 +119,47 @@ std::vector<std::string> makeTrackIdUnique(const std::vector<std::string>& track
     return uniqueIds;
 }
 
+std::string sendPostRequest(std::string payload) {
+    CURL *curl;
+    CURLcode res;
+    curl = curl_easy_init();
+    if(!curl) return "";
+    std::string path = "config.yaml";
+    YAML::Node conf = loadYaml(path);
+
+    std::string body = payload;
+    std::string response;
+
+    struct curl_slist* headers = nullptr;
+    headers = curl_slist_append(headers, "content-type: application/json");
+    headers = curl_slist_append(headers, ("authorization: Bearer " + conf["authorization-bearer"].as<std::string>()).c_str());
+    headers = curl_slist_append(headers, ("client-token: " + conf["client-token"].as<std::string>()).c_str());
+
+    curl_easy_setopt(curl, CURLOPT_URL, "https://api-partner.spotify.com/pathfinder/v2/query");
+    curl_easy_setopt(curl, CURLOPT_POST, 1L);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, body.size());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+    res = curl_easy_perform(curl);
+
+    if(res != CURLE_OK) {
+        std::cerr << "curl failed: " << curl_easy_strerror(res) << std::endl;
+    }
+
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+
+    return response;
+}
+
 std::vector<std::string> getArtistDiscography(void) {
     std::vector<std::string> discographyUris;
 
     std::string opName = "queryArtistDiscographyAll";
-    CURL *curl;
-    CURLcode res;
     std::string path = "config.yaml";
 
     YAML::Node conf = loadYaml(path);
@@ -144,34 +184,10 @@ std::vector<std::string> getArtistDiscography(void) {
         extensions["persistedQuery"] = persistedQuery;
         payload["extensions"] = extensions;
 
-        curl = curl_easy_init();
-        if(!curl) return discographyUris;
-
         std::string body = payload.dump();
-        std::string response;
-
-        struct curl_slist* headers = nullptr;
-        headers = curl_slist_append(headers, "content-type: application/json");
-        headers = curl_slist_append(headers, ("authorization: Bearer " + conf["authorization-bearer"].as<std::string>()).c_str());
-        headers = curl_slist_append(headers, ("client-token: " + conf["client-token"].as<std::string>()).c_str());
-
-        curl_easy_setopt(curl, CURLOPT_URL, "https://api-partner.spotify.com/pathfinder/v2/query");
-        curl_easy_setopt(curl, CURLOPT_POST, 1L);
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, body.size());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-        res = curl_easy_perform(curl);
-
-        if(res != CURLE_OK) {
-            std::cerr << "curl failed: " << curl_easy_strerror(res) << std::endl;
-        }
+        std::string response = sendPostRequest(body);
 
         long http_code = 0;
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
         if(isDebug) {
             std::cout << "[DEBUG Artist] HTTP Status Code: " << http_code << std::endl;
             std::cout << "[DEBUG Artist] Response length: " << response.length() << " Bytes" << std::endl;
@@ -181,8 +197,6 @@ std::vector<std::string> getArtistDiscography(void) {
             if(isDebug) {
                 std::cout << "[DEBUG Artist] Sent Payload was: " << body << "\n\n";
             }
-            curl_slist_free_all(headers);
-            curl_easy_cleanup(curl);
             return discographyUris;
         }
 
@@ -218,9 +232,6 @@ std::vector<std::string> getArtistDiscography(void) {
             std::cerr << "Experienced error parsing discography json: " << e.what() << std::endl;
             continue;
         }
-
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl);
     }
 
     return discographyUris;
@@ -236,11 +247,6 @@ int getAlbumNameAndTracks(void) {
     }
 
     std::string opName = "getAlbumNameAndTracks"; 
-    CURL *curl;
-    CURLcode res;
-    std::string path = "config.yaml";
-
-    YAML::Node conf = loadYaml(path);
 
     size_t totalAlbums = discographyUris.size();
     size_t currentAlbums = 0;
@@ -252,12 +258,6 @@ int getAlbumNameAndTracks(void) {
     }
 
     for(const std::string& uri : discographyUris) {
-        curl = curl_easy_init();
-        if(!curl) {
-            currentAlbums++;
-            continue;
-        };
-
         json payload = json::object();
         payload["operationName"] = opName;
 
@@ -276,34 +276,14 @@ int getAlbumNameAndTracks(void) {
         payload["extensions"] = extensions;
 
         std::string body = payload.dump();
-        std::string response;
+        std::string response = sendPostRequest(body);
 
-        struct curl_slist* headers = nullptr;
-        headers = curl_slist_append(headers, "content-type: application/json");
-        headers = curl_slist_append(headers, ("authorization: Bearer " + conf["authorization-bearer"].as<std::string>()).c_str());
-        headers = curl_slist_append(headers, ("client-token: " + conf["client-token"].as<std::string>()).c_str());
-
-        curl_easy_setopt(curl, CURLOPT_URL, "https://api-partner.spotify.com/pathfinder/v2/query");
-        curl_easy_setopt(curl, CURLOPT_POST, 1L);
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, body.size());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-        res = curl_easy_perform(curl);
-
-        if(res != CURLE_OK) {
-            // nothing lol get over it
-        } else {
+        if(response.empty()) { currentAlbums++; continue; } else 
+        {
             for(const std::string& item : parseAlbumTracks(response)) {
                 trackUris.push_back(item);
             }
         }
-
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl);
 
         currentAlbums++;
         if(!isDebug) {
@@ -349,36 +329,12 @@ int addToPlaylist(const std::vector<std::string>& trackIds) {
     extensions["persistedQuery"] = persistedQuery;
     payload["extensions"] = extensions;
 
-    curl = curl_easy_init();
-    if(!curl) return -1;
-
     std::string body = payload.dump();
-    std::string response;
+    std::string response = sendPostRequest(body);
 
-    struct curl_slist* headers = nullptr;
-    headers = curl_slist_append(headers, "content-type: application/json");
-    headers = curl_slist_append(headers, ("authorization: Bearer " + conf["authorization-bearer"].as<std::string>()).c_str());
-    headers = curl_slist_append(headers, ("client-token: " + conf["client-token"].as<std::string>()).c_str());
-
-    curl_easy_setopt(curl, CURLOPT_URL, "https://api-partner.spotify.com/pathfinder/v2/query");
-    curl_easy_setopt(curl, CURLOPT_POST, 1L);
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, body.size());
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-    res = curl_easy_perform(curl);
-
-    if(res != CURLE_OK) {
-        std::cerr << "curl failed: " << curl_easy_strerror(res) << std::endl;
-    } else {
+    if(!response.empty()) {
         std::cout << "\n[SUCCESS] Playlist Response: " << response << std::endl;
     }
-
-    curl_slist_free_all(headers);
-    curl_easy_cleanup(curl);
 
     return 0;
 }

@@ -13,7 +13,7 @@ all:
 	g++ $(classes)/*.cpp -o $(buildDir)/AddiFy -lcurl -lyaml-cpp -I/usr/include -std=c++20; \
 
 windows:
-	x86_64-w64-mingw32-g++ Classes/*.cpp -o build/AddiFy.exe -lcurl -lyaml-cpp -std=c++20;
+	x86_64-w64-mingw32-g++ -std=c++20 Classes/*.cpp -o build/AddiFy.exe -static-libgcc -static-libstdc++ -lyaml-cpp -lcurl
 
 clean:
 	ls $(buildDir) 2>/dev/null; \
