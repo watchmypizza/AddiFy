@@ -1,9 +1,13 @@
 #include <algorithm>
 #include <cstddef>
+#include <cstdlib>
 #include <curl/curl.h>
 #include <curl/easy.h>
+#include <filesystem>
+#include <fstream>
 #include <random>
 #include <string>
+#include <sys/types.h>
 #include <vector>
 #include <yaml-cpp/dll.h>
 #include <yaml-cpp/exceptions.h>
@@ -20,6 +24,8 @@
 
 using json = nlohmann::json;
 
+void RAMYAML(void);
+
 YAML::Node configFile;
 
 // load yaml
@@ -32,6 +38,7 @@ YAML::Node loadYaml(const str_t& path) {
         return configFile;
     } catch(YAML::Exception& e) {
         std::cerr << "Error parsing YAML file: " << e.what() << std::endl;
+        RAMYAML();
         return YAML::Node();
     }
 }
@@ -39,11 +46,51 @@ YAML::Node loadYaml(const str_t& path) {
 strlist_t parseAlbumTracks(const str_t& rawJsonResponse);
 int addToPlaylist(strlist_t& trackIds);
 strlist_t getArtistDiscography(void);
+int getAlbumNameAndTracks(void);
 strlist_t makeTrackIdUnique(const strlist_t& trackIds);
+void printMessage(const str_t& message);
 
 bool isDebug = false;
 bool allowDuplicates = false;
 bool allowChunking = true;
+
+void RAMYAML(void) {
+    auto tempPath = std::filesystem::temp_directory_path() / "addify_runtime.yaml";
+
+    std::ofstream outFile(tempPath);
+    if(outFile.is_open()) {
+        outFile << "# === AddiFy Live Runtime YAML Configuration ===\n"
+                << "# Nothing here gets saved permanently, all of this lives inside of RAM\n"
+                << "authorization-bearer: \n"
+                << "client-token: \n"
+                << "\n"
+                << "artists: # You can add as many artists as you want by adding new dashes in each new line\n"
+                << "  - \n"
+                << "\n"
+                << "render-ahead-limit: 40\n"
+                << "playlist-to-add-to: \n";
+        outFile.close();
+    }
+
+    const char *editor = std::getenv("EDITOR");
+    if(!editor) editor = "nano";
+
+    str_t cmd = str_t(editor) + " " + tempPath.string();
+    std::system(cmd.c_str());
+
+    try{
+        configFile = YAML::LoadFile(tempPath.string());
+        std::filesystem::remove(tempPath);
+
+        getAlbumNameAndTracks();
+        return;
+    } catch(YAML::Exception e) {
+        std::filesystem::remove(tempPath);
+        std::cerr << "YAML Encountered a parsing error: " << e.what() << std::endl;
+        return;
+    }
+    return;
+}
 
 void printProgressBar(size_t current, size_t total, std::chrono::steady_clock::time_point startTime) {
     if(total == 0) return;
