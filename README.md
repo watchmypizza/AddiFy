@@ -156,6 +156,7 @@ playlist-to-add-to: 0JOAYyVJHTg45SeORIAOhL
 > [!IMPORTANT]
 > **Dealing with Large Discographies?**
 > By default, the client handles layouts in chunks of 20. If you are adding an artist with more than 20 releases (albums, EPs, or singles), you **must** increase the `render-ahead-limit` in your `config.yaml` to match or exceed their total release count!
+>
 > **Program crashing with `Error parsing YAML file: bad file: config.yaml`?**
 > Ensure `config.yaml` is saved directly in the same directory as the compiled `AddiFy` binary.
 
