@@ -35,7 +35,7 @@ nano
 
 This tool was benchmarked against Buckethead's massive discography. With the `render-ahead-limit` config option set to **437**, the script successfully fetched all albums, singles, and tracks in approximately **6 - 7 minutes**.
 
-<!--> You know what else is massive? LOOOW TAPER FADEEEE -->
+<!-- You know what else is massive? LOOOW TAPER FADEEEE -->
 
 **Test Environment:**
 * **CPU:** AMD Ryzen 5 5500U (Laptop)
