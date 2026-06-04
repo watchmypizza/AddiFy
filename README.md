@@ -183,3 +183,11 @@ Run the binary from your terminal to begin the sync process:
 ```sh
 ./AddiFy
 ```
+
+<!-- Oh yeah did you know that I like cats? Also I have a pet cat named "Michi". You know how I came up with this project? I was talking to gemini and was bored and just asked it what I can program. It told me something about reverse engineering. Too lazy to look it up right now, but yea I noticed spotify lacks an "add artist's discography" button I decided to make this program. This program basically does what this button should do if it would exist, just better with multiple artists at once. I don't knwo what more I can add after this commit, but I will always periodically find things while watching re:zero or when i notice something that I wanna add so badly. I don't really care about GUI so I'll probaby never add GUI but maybe I'll add an console interface that lets you interact with the program instead of the program just doing whatever its supposed to do at the moment. Like I thought about adding maybe some cool thing I forgot what it's called. Eh who cares, but basically I want to add a navigation menu on where you can type a number. Example:
+[1] Something option
+[2] Something second option like configure config.yaml
+[3] Something like refresh cached config.yaml
+
+Option [1, 2, 3]: USERINPUT
+You know I thought about something like this. Maybe I will add this someday, but right now I am not particularly interested in this sort of stuff. I mainly just want to get it working. Also if I ever do add an actual GUI (over QT primarly) I will make sure it keeps its CLI commands functional. Since some BINDOWS users use DISGUSTING microslop I will keep CLI functionality present. Yeah so thats basically it for my little rant here and uh if you find this congratulations, I crown you a nerd! -->
