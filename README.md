@@ -52,7 +52,7 @@ A `Makefile` is included for convenience. Run the following commands:
 ```sh
 git clone [https://github.com/watchmypizza/AddiFy.git](https://github.com/watchmypizza/AddiFy.git)
 cd AddiFy
-make
+cmake --build build
 ```
 
 ### Option 2: Manual Compilation
