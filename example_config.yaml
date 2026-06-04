@@ -4,4 +4,6 @@ client-token: # to get your token, look at readme
 artists:
   - 1yrMpdnU1xV0ASzlSzX8X4 # Put your artists URIs here, so https://open.spotify.com/artist/1yrMpdnU1xV0ASzlSzX8X4?si=55253428fdfnoafidk will become 1yrMpdnU1xV0ASzlSzX8X4 as you strip the ?si=xxxx and the https://open.spotify.com/artist/ away
 
+render-ahead-limit: 20
+
 playlist-to-add-to: 0JOAYyVJHTg45SeORIAOhL # Do the same with the playlist so https://open.spotify.com/playlist/0JOAYyVJHTg45SeORIAOhL?si=xxxxxxxxx will become 0JOAYyVJHTg45SeORIAOhL as you strip away ?si=xxxxx and https://open.spotify.com/playlist/

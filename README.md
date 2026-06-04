@@ -13,6 +13,17 @@ This tool interacts with internal/undocumented endpoints and technically violate
 
 ---
 
+## 🎯 Benchmark
+
+This tool was benchmarked against Buckethead's massive discography. With the `render-ahead-limit` config option set to **437**, the script successfully fetched all albums, singles, and tracks in approximately **6 - 7 minutes**.
+
+<!--> You know what else is massive? LOOOW TAPER FADEEEE -->
+
+**Test Environment:**
+* **CPU:** AMD Ryzen 5 5500U (Laptop)
+* **Target:** 437 Releases (Buckethead)
+* **Status:** 100% Success, 0 Crashes
+
 ## 🛠️ Building the Project
 
 ### Prerequisites
@@ -48,6 +59,8 @@ client-token: ""
 
 artists:
     - exampleId
+
+render-ahead-limit: 20
 
 playlist-to-add-to: exampleId
 ```
@@ -140,7 +153,11 @@ artist: 42bRZvZrglzmj99X9alo1a
 playlist-to-add-to: 0JOAYyVJHTg45SeORIAOhL
 ```
 
-⚠️ Important: Ensure `config.yaml` is saved directly in the same directory as the compiled `AddiFy` binary.
+> [!IMPORTANT]
+> **Dealing with Large Discographies?**
+> By default, the client handles layouts in chunks of 20. If you are adding an artist with more than 20 releases (albums, EPs, or singles), you **must** increase the `render-ahead-limit` in your `config.yaml` to match or exceed their total release count!
+> **Program crashing with `Error parsing YAML file: bad file: config.yaml`?**
+> Ensure `config.yaml` is saved directly in the same directory as the compiled `AddiFy` binary.
 
 Run the binary from your terminal to begin the sync process:
 

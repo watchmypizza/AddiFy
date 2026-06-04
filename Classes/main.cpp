@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <curl/curl.h>
 #include <curl/easy.h>
+#include <random>
 #include <string>
 #include <vector>
 #include <yaml-cpp/dll.h>
@@ -13,6 +14,7 @@
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <iomanip>
+#include <thread>
 #include <chrono>
 
 using json = nlohmann::json;
@@ -119,7 +121,7 @@ std::vector<std::string> makeTrackIdUnique(const std::vector<std::string>& track
     return uniqueIds;
 }
 
-std::string sendPostRequest(std::string payload) {
+std::string sendPostRequest(json& payload) {
     CURL *curl;
     CURLcode res;
     curl = curl_easy_init();
@@ -127,8 +129,16 @@ std::string sendPostRequest(std::string payload) {
     std::string path = "config.yaml";
     YAML::Node conf = loadYaml(path);
 
-    std::string body = payload;
     std::string response;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distr(500, 1500);
+    std::this_thread::sleep_for(std::chrono::milliseconds(distr(gen)));
+
+    int limit = conf["render-ahead-limit"].as<int>(20);
+    payload["variables"]["limit"] = limit;
+    std::string body = payload.dump();
 
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "content-type: application/json");
@@ -185,7 +195,7 @@ std::vector<std::string> getArtistDiscography(void) {
         payload["extensions"] = extensions;
 
         std::string body = payload.dump();
-        std::string response = sendPostRequest(body);
+        std::string response = sendPostRequest(payload);
 
         long http_code = 0;
         if(isDebug) {
@@ -275,8 +285,7 @@ int getAlbumNameAndTracks(void) {
         extensions["persistedQuery"] = persistedQuery;
         payload["extensions"] = extensions;
 
-        std::string body = payload.dump();
-        std::string response = sendPostRequest(body);
+        std::string response = sendPostRequest(payload);
 
         if(response.empty()) { currentAlbums++; continue; } else 
         {
@@ -297,44 +306,63 @@ int getAlbumNameAndTracks(void) {
 
 int addToPlaylist(const std::vector<std::string>& trackIds) {
     if (trackIds.empty()) {
-        std::cerr << "[ABORT] Keine Tracks zum Hinzufügen übergeben!" << std::endl;
+        std::cerr << "\n[ABORT] No tracks to add given!" << std::endl;
         return -1;
     }
 
     std::string opName = "addToPlaylist";
-    CURL *curl;
-    CURLcode res;
     std::string path = "config.yaml";
+
+    const size_t CHUNK_SIZE = 100;
+    size_t totalTracks = trackIds.size();
+    auto startTime = std::chrono::steady_clock::now();
+
+    std::cout << "\nAdding " << totalTracks << " tracks to playlist..." << std::endl;
 
     YAML::Node conf = loadYaml(path);
 
-    json payload = json::object();
-    payload["operationName"] = opName;
+    for(size_t i = 0; i < totalTracks; i += CHUNK_SIZE) {
+        auto startIt = trackIds.begin() + i;
+        auto endIt = trackIds.begin() + std::min(i + CHUNK_SIZE, totalTracks);
 
-    json variables = json::object();
-    
-    json newPosition = json::object();
-    newPosition["fromUid"] = nullptr;
-    newPosition["moveType"] = "BOTTOM_OF_PLAYLIST";
-    
-    variables["newPosition"] = newPosition;
-    variables["playlistItemUris"] = trackIds;
-    variables["playlistUri"] = "spotify:playlist:" + conf["playlist-to-add-to"].as<std::string>();
-    payload["variables"] = variables;
+        std::vector<std::string> chunk(startIt, endIt);
 
-    json extensions = json::object();
-    json persistedQuery = json::object();
-    persistedQuery["sha256Hash"] = "47b2a1234b17748d332dd0431534f22450e9ecbb3d5ddcdacbd83368636a0990";
-    persistedQuery["version"] = 1;
-    extensions["persistedQuery"] = persistedQuery;
-    payload["extensions"] = extensions;
+        chunk = makeTrackIdUnique(chunk);
 
-    std::string body = payload.dump();
-    std::string response = sendPostRequest(body);
+        json payload = json::object();
+        payload["operationName"] = opName;
 
-    if(!response.empty()) {
-        std::cout << "\n[SUCCESS] Playlist Response: " << response << std::endl;
+        json variables = json::object();
+        
+        json newPosition = json::object();
+        newPosition["fromUid"] = nullptr;
+        newPosition["moveType"] = "BOTTOM_OF_PLAYLIST";
+        
+        variables["newPosition"] = newPosition;
+        variables["playlistItemUris"] = chunk;
+        variables["playlistUri"] = "spotify:playlist:" + conf["playlist-to-add-to"].as<std::string>();
+        payload["variables"] = variables;
+
+        json extensions = json::object();
+        json persistedQuery = json::object();
+        persistedQuery["sha256Hash"] = "47b2a1234b17748d332dd0431534f22450e9ecbb3d5ddcdacbd83368636a0990";
+        persistedQuery["version"] = 1;
+        extensions["persistedQuery"] = persistedQuery;
+        payload["extensions"] = extensions;
+
+        std::string response = sendPostRequest(payload);
+        
+        if(!isDebug) {
+            printProgressBar(std::min(i + CHUNK_SIZE, totalTracks), totalTracks, startTime);
+        }
+
+        if(response.empty()) {
+            std::cout << "\n[ERR] Received empty response..." << std::endl;
+            continue;
+        }
     }
+
+    std::cout << "\nSuccessfully added all tracks to the playlist." << std::endl;
 
     return 0;
 }
