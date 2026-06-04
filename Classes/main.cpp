@@ -16,13 +16,14 @@
 #include <iomanip>
 #include <thread>
 #include <chrono>
+#include "../Include/typedefs.h"
 
 using json = nlohmann::json;
 
 YAML::Node configFile;
 
 // load yaml
-YAML::Node loadYaml(const std::string& path) {
+YAML::Node loadYaml(const str_t& path) {
     if(!configFile.IsNull()) {
         return configFile;
     }
@@ -35,13 +36,14 @@ YAML::Node loadYaml(const std::string& path) {
     }
 }
 
-std::vector<std::string> parseAlbumTracks(const std::string& rawJsonResponse);
-int addToPlaylist(const std::vector<std::string>& trackIds);
-std::vector<std::string> getArtistDiscography(void);
-std::vector<std::string> makeTrackIdUnique(const std::vector<std::string>& trackIds);
+strlist_t parseAlbumTracks(const str_t& rawJsonResponse);
+int addToPlaylist(strlist_t& trackIds);
+strlist_t getArtistDiscography(void);
+strlist_t makeTrackIdUnique(const strlist_t& trackIds);
 
 bool isDebug = false;
 bool allowDuplicates = false;
+bool allowChunking = true;
 
 void printProgressBar(size_t current, size_t total, std::chrono::steady_clock::time_point startTime) {
     if(total == 0) return;
@@ -78,13 +80,13 @@ void printProgressBar(size_t current, size_t total, std::chrono::steady_clock::t
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp)
 {
     size_t totalSize = size * nmemb;
-    std::string* response = static_cast<std::string*>(userp);
+    str_t* response = static_cast<str_t*>(userp);
     response->append(static_cast<char*>(contents), totalSize);
     return totalSize;
 }
 
-std::vector<std::string> parseAlbumTracks(const std::string& rawJsonResponse) {
-    std::vector<std::string> trackIds;
+strlist_t parseAlbumTracks(const str_t& rawJsonResponse) {
+    strlist_t trackIds;
 
     try {
         auto parsedJson = json::parse(rawJsonResponse);
@@ -98,7 +100,7 @@ std::vector<std::string> parseAlbumTracks(const std::string& rawJsonResponse) {
 
             for (const auto& item : items) {
                 if(item.contains("track") && item["track"].contains("uri")) {
-                    std::string fullUri = item["track"]["uri"];
+                    str_t fullUri = item["track"]["uri"];
                     trackIds.push_back(fullUri);
                 }
             }
@@ -112,24 +114,24 @@ std::vector<std::string> parseAlbumTracks(const std::string& rawJsonResponse) {
     return trackIds;
 }
 
-std::vector<std::string> makeTrackIdUnique(const std::vector<std::string>& trackIds) {
+strlist_t makeTrackIdUnique(const strlist_t& trackIds) {
     if(allowDuplicates) return trackIds;
-    std::vector<std::string> uniqueIds = trackIds;
+    strlist_t uniqueIds = trackIds;
     std::sort(uniqueIds.begin(), uniqueIds.end());
     auto ip = std::unique(uniqueIds.begin(), uniqueIds.end());
     uniqueIds.erase(ip, uniqueIds.end());
     return uniqueIds;
 }
 
-std::string sendPostRequest(json& payload) {
+str_t sendPostRequest(json& payload) {
     CURL *curl;
     CURLcode res;
     curl = curl_easy_init();
     if(!curl) return "";
-    std::string path = "config.yaml";
+    str_t path = "config.yaml";
     YAML::Node conf = loadYaml(path);
 
-    std::string response;
+    str_t response;
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -138,12 +140,12 @@ std::string sendPostRequest(json& payload) {
 
     int limit = conf["render-ahead-limit"].as<int>(20);
     payload["variables"]["limit"] = limit;
-    std::string body = payload.dump();
+    str_t body = payload.dump();
 
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "content-type: application/json");
-    headers = curl_slist_append(headers, ("authorization: Bearer " + conf["authorization-bearer"].as<std::string>()).c_str());
-    headers = curl_slist_append(headers, ("client-token: " + conf["client-token"].as<std::string>()).c_str());
+    headers = curl_slist_append(headers, ("authorization: Bearer " + conf["authorization-bearer"].as<str_t>()).c_str());
+    headers = curl_slist_append(headers, ("client-token: " + conf["client-token"].as<str_t>()).c_str());
 
     curl_easy_setopt(curl, CURLOPT_URL, "https://api-partner.spotify.com/pathfinder/v2/query");
     curl_easy_setopt(curl, CURLOPT_POST, 1L);
@@ -166,20 +168,20 @@ std::string sendPostRequest(json& payload) {
     return response;
 }
 
-std::vector<std::string> getArtistDiscography(void) {
-    std::vector<std::string> discographyUris;
+strlist_t getArtistDiscography(void) {
+    strlist_t discographyUris;
 
-    std::string opName = "queryArtistDiscographyAll";
-    std::string path = "config.yaml";
+    str_t opName = "queryArtistDiscographyAll";
+    str_t path = "config.yaml";
 
     YAML::Node conf = loadYaml(path);
 
     json payload = json::object();
     payload["operationName"] = opName;
 
-    std::vector<std::string> artists = conf["artists"].as<std::vector<std::string>>();
+    strlist_t artists = conf["artists"].as<strlist_t>();
 
-    for (std::string& artist : artists) {
+    for (str_t& artist : artists) {
         json variables = json::object();
         variables["limit"] = 20;
         variables["offset"] = 0;
@@ -194,8 +196,8 @@ std::vector<std::string> getArtistDiscography(void) {
         extensions["persistedQuery"] = persistedQuery;
         payload["extensions"] = extensions;
 
-        std::string body = payload.dump();
-        std::string response = sendPostRequest(payload);
+        str_t body = payload.dump();
+        str_t response = sendPostRequest(payload);
 
         long http_code = 0;
         if(isDebug) {
@@ -248,15 +250,15 @@ std::vector<std::string> getArtistDiscography(void) {
 }
 
 int getAlbumNameAndTracks(void) {
-    std::vector<std::string> trackUris;
-    std::vector<std::string> discographyUris = getArtistDiscography();
+    strlist_t trackUris;
+    strlist_t discographyUris = getArtistDiscography();
 
     if (discographyUris.empty()) {
         std::cerr << "[ABORT] No Album-URIs found. Aborting." << std::endl;
         return -1;
     }
 
-    std::string opName = "getAlbumNameAndTracks"; 
+    str_t opName = "getAlbumNameAndTracks"; 
 
     size_t totalAlbums = discographyUris.size();
     size_t currentAlbums = 0;
@@ -267,7 +269,7 @@ int getAlbumNameAndTracks(void) {
         printProgressBar(currentAlbums, totalAlbums, startTime);
     }
 
-    for(const std::string& uri : discographyUris) {
+    for(const str_t& uri : discographyUris) {
         json payload = json::object();
         payload["operationName"] = opName;
 
@@ -285,11 +287,11 @@ int getAlbumNameAndTracks(void) {
         extensions["persistedQuery"] = persistedQuery;
         payload["extensions"] = extensions;
 
-        std::string response = sendPostRequest(payload);
+        str_t response = sendPostRequest(payload);
 
         if(response.empty()) { currentAlbums++; continue; } else 
         {
-            for(const std::string& item : parseAlbumTracks(response)) {
+            for(const str_t& item : parseAlbumTracks(response)) {
                 trackUris.push_back(item);
             }
         }
@@ -304,14 +306,14 @@ int getAlbumNameAndTracks(void) {
     return addToPlaylist(trackUris);
 }
 
-int addToPlaylist(const std::vector<std::string>& trackIds) {
+int addToPlaylist(strlist_t& trackIds) {
     if (trackIds.empty()) {
         std::cerr << "\n[ABORT] No tracks to add given!" << std::endl;
         return -1;
     }
 
-    std::string opName = "addToPlaylist";
-    std::string path = "config.yaml";
+    str_t opName = "addToPlaylist";
+    str_t path = "config.yaml";
 
     const size_t CHUNK_SIZE = 100;
     size_t totalTracks = trackIds.size();
@@ -321,13 +323,49 @@ int addToPlaylist(const std::vector<std::string>& trackIds) {
 
     YAML::Node conf = loadYaml(path);
 
-    for(size_t i = 0; i < totalTracks; i += CHUNK_SIZE) {
-        auto startIt = trackIds.begin() + i;
-        auto endIt = trackIds.begin() + std::min(i + CHUNK_SIZE, totalTracks);
+    if(!allowChunking) {
+        for(size_t i = 0; i < totalTracks; i += CHUNK_SIZE) {
+            auto startIt = trackIds.begin() + i;
+            auto endIt = trackIds.begin() + std::min(i + CHUNK_SIZE, totalTracks);
 
-        std::vector<std::string> chunk(startIt, endIt);
+            strlist_t chunk(startIt, endIt);
 
-        chunk = makeTrackIdUnique(chunk);
+            chunk = makeTrackIdUnique(chunk);
+
+            json payload = json::object();
+            payload["operationName"] = opName;
+
+            json variables = json::object();
+            
+            json newPosition = json::object();
+            newPosition["fromUid"] = nullptr;
+            newPosition["moveType"] = "BOTTOM_OF_PLAYLIST";
+            
+            variables["newPosition"] = newPosition;
+            variables["playlistItemUris"] = chunk;
+            variables["playlistUri"] = "spotify:playlist:" + conf["playlist-to-add-to"].as<str_t>();
+            payload["variables"] = variables;
+
+            json extensions = json::object();
+            json persistedQuery = json::object();
+            persistedQuery["sha256Hash"] = "47b2a1234b17748d332dd0431534f22450e9ecbb3d5ddcdacbd83368636a0990";
+            persistedQuery["version"] = 1;
+            extensions["persistedQuery"] = persistedQuery;
+            payload["extensions"] = extensions;
+
+            str_t response = sendPostRequest(payload);
+            
+            if(!isDebug) {
+                printProgressBar(std::min(i + CHUNK_SIZE, totalTracks), totalTracks, startTime);
+            }
+
+            if(response.empty()) {
+                std::cout << "\n[ERR] Received empty response..." << std::endl;
+                continue;
+            }
+        }
+    } else { 
+        trackIds = makeTrackIdUnique(trackIds);
 
         json payload = json::object();
         payload["operationName"] = opName;
@@ -339,8 +377,8 @@ int addToPlaylist(const std::vector<std::string>& trackIds) {
         newPosition["moveType"] = "BOTTOM_OF_PLAYLIST";
         
         variables["newPosition"] = newPosition;
-        variables["playlistItemUris"] = chunk;
-        variables["playlistUri"] = "spotify:playlist:" + conf["playlist-to-add-to"].as<std::string>();
+        variables["playlistItemUris"] = trackIds;
+        variables["playlistUri"] = "spotify:playlist:" + conf["playlist-to-add-to"].as<str_t>();
         payload["variables"] = variables;
 
         json extensions = json::object();
@@ -350,21 +388,29 @@ int addToPlaylist(const std::vector<std::string>& trackIds) {
         extensions["persistedQuery"] = persistedQuery;
         payload["extensions"] = extensions;
 
-        std::string response = sendPostRequest(payload);
-        
-        if(!isDebug) {
-            printProgressBar(std::min(i + CHUNK_SIZE, totalTracks), totalTracks, startTime);
-        }
+        str_t response = sendPostRequest(payload);
 
         if(response.empty()) {
             std::cout << "\n[ERR] Received empty response..." << std::endl;
-            continue;
         }
     }
 
     std::cout << "\nSuccessfully added all tracks to the playlist." << std::endl;
 
     return 0;
+}
+
+void printMessage(const str_t& message) {
+    std::cout << message << std::endl;
+}
+
+void printHelp(void) {
+    printMessage("=== Command Line Arguments ===");
+    printMessage("--debug            | -D  || Allows for AddiFy to print debugging messages. Useful when trying to find an error.");
+    printMessage("--allow-duplicates | -aD || Does not prevent duplicated songs from being added.");
+    printMessage("--no-chunking      | -nC || Does not split the song list into parts of 100 songs, but sends every song in a list.");
+    printMessage("--help             | -h  || Print this message.");
+    return;
 }
 
 int main(int argc, char *argv[]) {
@@ -376,6 +422,13 @@ int main(int argc, char *argv[]) {
         }
         if(arg == "--allow-duplicates" || arg == "-aD") {
             allowDuplicates = true;
+        }
+        if(arg == "--no-chunking" || arg == "-nC") {
+            allowChunking = false;
+        }
+        if(arg == "--help" || arg == "-h") {
+            printHelp();
+            return 0;
         }
     }
 

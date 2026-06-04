@@ -1,6 +1,7 @@
 PWD = $(shell pwd)
 classes = $(PWD)/Classes
 buildDir = $(PWD)/build
+includeDir = $(PWD)/Include
 
 .PHONY: all clean
 
@@ -10,7 +11,7 @@ all:
 		echo "$(buildDir) does not exist, creating..."; \
 		mkdir $(buildDir); \
 	fi; \
-	g++ $(classes)/*.cpp -o $(buildDir)/AddiFy -lcurl -lyaml-cpp -I/usr/include -std=c++20; \
+	g++ $(classes)/*.cpp -o $(buildDir)/AddiFy -lcurl -lyaml-cpp -I/usr/include -I$(includeDir) -std=c++20; \
 
 windows:
 	x86_64-w64-mingw32-g++ -std=c++20 Classes/*.cpp -o build/AddiFy.exe -static-libgcc -static-libstdc++ -lyaml-cpp -lcurl
