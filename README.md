@@ -147,7 +147,7 @@ You need the unique identifier for the artist whose discography you want to fetc
 
 2. Simply strip away the `spotify:artist:` prefix to isolate the ID: `42bRZvZrglzmj99X9alo1a`
 
-Paste this value into the `artist:` field in your `config.yaml`.
+Paste this value into a new entry in the `artists:` field in your `config.yaml`.
 
 ### Step 3: Get the Target Playlist ID
 
