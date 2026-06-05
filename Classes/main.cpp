@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <random>
+#include <regex>
 #include <string>
 #include <sys/types.h>
 #include <vector>
@@ -49,6 +50,9 @@ strlist_t getArtistDiscography(void);
 int getAlbumNameAndTracks(void);
 strlist_t makeTrackIdUnique(const strlist_t& trackIds);
 void printMessage(const str_t& message);
+str_t searchSuggestions(const str_t& artistName);
+bool compareArtistName(const str_t& s1, const str_t& s2, double threshold);
+size_t levenshteins_distance(const str_t& s1, const str_t& s2);
 
 bool isDebug = false;
 bool allowDuplicates = false;
@@ -233,7 +237,7 @@ strlist_t getArtistDiscography(void) {
         variables["limit"] = 20;
         variables["offset"] = 0;
         variables["order"] = "DATE_DESC";
-        variables["uri"] = "spotify:artist:" + artist;
+        variables["uri"] = "spotify:artist:" + searchSuggestions(artist);
         payload["variables"] = variables;
 
         json extensions = json::object();
@@ -445,6 +449,103 @@ int addToPlaylist(strlist_t& trackIds) {
     std::cout << "\nSuccessfully added all tracks to the playlist." << std::endl;
 
     return 0;
+}
+
+size_t levenshteins_distance(const str_t& s1, const str_t& s2) {
+    const size_t len1 = s1.size();
+    const size_t len2 = s2.size();
+
+    if(len1 > len2) return levenshteins_distance(s2, s1);
+
+    std::vector<size_t> prev_row(len1 + 1);
+    std::vector<size_t> curr_row(len1 + 1);
+
+    for(size_t i = 0; i <= len1; ++i) prev_row[i] = i;
+
+    for(size_t j = 1; j <= len2; ++j) {
+        curr_row[0] = j;
+        for(size_t i = 1; i <= len1; ++i) {
+            size_t cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
+            curr_row[i] = std::min({
+                curr_row[i - 1] + 1,
+                prev_row[i] + 1,
+                prev_row[i - 1] + cost,
+            });
+        }
+        std::swap(prev_row, curr_row);
+    }
+
+    return prev_row[len1];
+}
+
+bool compareArtistName(const str_t& s1, const str_t& s2, double threshold = 0.90) {
+    if(s1.empty() && s2.empty()) return true;
+
+    size_t max_len = std::max(s1.size(), s2.size());
+    size_t dist = levenshteins_distance(s1, s2);
+
+    double similarity = 1.0 - (static_cast<double>(dist) / max_len);
+    return similarity >= threshold;
+}
+
+str_t searchSuggestions(const str_t& artistName) {
+    std::regex pattern("^[a-zA-Z0-9]{22}$");
+    std::smatch match;
+
+    if(std::regex_search(artistName, match, pattern)) {
+        return artistName;
+    }
+
+    str_t operationName = "searchSuggestions";
+    auto payload = json::object();
+
+    payload["operationName"] = operationName;
+    json variables = json::object();
+    variables["includeAlbumPreReleases"] = false;
+    variables["includeAuthors"] = true;
+    variables["includeEpisodeContentRatingsV2"] = true;
+    variables["limit"] = 50;
+    variables["numberOfTopResults"] = 50;
+    variables["offset"] = 0;
+    variables["query"] = artistName;
+    payload["variables"] = variables;
+
+    json extensions = json::object();
+    json persistedQuery = json::object();
+    persistedQuery["sha256Hash"] = "556f5a15b2fdd3a7113ffd377ad9805e38a3a27b8bb1ca7d6d76bad54aa8ee12";
+    persistedQuery["version"] = 1;
+    extensions["persistedQuery"] = persistedQuery;
+    payload["extensions"] = extensions;
+    // iterate through each individual artist by querying a limit of 50, loop through all 50 of them, if artist continue on to see if the name of the artist is 90% <= typedNAme in the config file for name parsing, else continue to use URI's if no name but URI is specified.
+
+    str_t getArtists = sendPostRequest(payload);
+    try {
+        auto jsonConv = json::parse(getArtists);
+        //strlist_t items = jsonConv["data"]["searchV2"]["topResultsV2"];
+        if(jsonConv.contains("data") && jsonConv["data"].contains("searchV2") && jsonConv["data"]["searchV2"].contains("topResultsV2") && jsonConv["data"]["searchV2"]["topResultsV2"].contains("itemsV2")) {
+            auto items = jsonConv["data"]["searchV2"]["topResultsV2"]["itemsV2"];
+
+            for(const auto& item : items) {
+                if(item.contains("item") && item["item"].contains("data") && item["item"]["data"].contains("uri") && item["item"]["data"].contains("profile") && item["item"]["data"]["profile"].contains("name")) {
+                    str_t URI = static_cast<str_t>(item["item"]["data"]["uri"]);
+                    str_t user = static_cast<str_t>(item["item"]["data"]["profile"]["name"]);
+
+                    if(compareArtistName(artistName, user)) {
+                        if(URI.find("spotify:artist:") != std::string::npos) {
+                            URI = URI.substr(15);
+                            return URI;
+                        }
+                    }
+                }
+            }
+        } else {
+            std::cerr << "Error in searchSuggestions() REQUEST VALUE PURE: " << getArtists << std::endl;
+        }
+    } catch(json::exception& e) {
+        std::cerr << "Error in JSON parsing: " << e.what() << std::endl;
+        return "";
+    }
+    return "";
 }
 
 void printMessage(const str_t& message) {
