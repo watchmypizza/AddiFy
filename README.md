@@ -76,7 +76,7 @@ authorization-bearer: ""
 client-token: ""
 
 artists:
-    - exampleId
+    - exampleName
 
 render-ahead-limit: 20
 
@@ -167,7 +167,9 @@ Your finalized `config.yaml` should match this structure:
 authorization-bearer: YOUR_RAW_AUTHORIZATION_STRING_WITHOUT_BEARER
 client-token: YOUR_EXTRACTED_CLIENT_TOKEN_STRING
 
-artist: 42bRZvZrglzmj99X9alo1a
+artists:
+    - usedcvnt
+
 playlist-to-add-to: 0JOAYyVJHTg45SeORIAOhL
 ```
 
