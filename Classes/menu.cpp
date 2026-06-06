@@ -30,7 +30,7 @@ int menu(void) {
         print("");
         print("  → [4] Run AddiFy with current config      ");
         print("");
-        std::cout << "    [1, 2, 3, 4] → ";
+        std::cout << "      [1, 2, 3, 4] → ";
         std::cin >> userChoice;
         std::cout << std::endl;
 
@@ -72,7 +72,10 @@ int menu(void) {
             continue;
         } else if(userNum == 4) {
             break;
-        } else {
+        } else if(userNum == 0) {
+            exit(0);
+        }
+        else {
             print("Invalid option passed.");
             continue;
         }
