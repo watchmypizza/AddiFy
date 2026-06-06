@@ -11,6 +11,7 @@ find_package(CURL REQUIRED)
 
 set(SOURCES
     Classes/main.cpp
+    Classes/menu.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

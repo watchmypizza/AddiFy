@@ -22,6 +22,7 @@
 #include <thread>
 #include <chrono>
 #include "../Include/typedefs.h"
+#include "../Include/menu.h"
 
 using json = nlohmann::json;
 
@@ -57,6 +58,7 @@ size_t levenshteins_distance(const str_t& s1, const str_t& s2);
 bool isDebug = false;
 bool allowDuplicates = false;
 bool allowChunking = true;
+bool launchedMenu = false;
 
 void RAMYAML(void) {
     auto tempPath = std::filesystem::temp_directory_path() / "addify_runtime.yaml";
@@ -562,6 +564,11 @@ void printHelp(void) {
 }
 
 int main(int argc, char *argv[]) {
+    if(!launchedMenu) {
+        menu();
+        launchedMenu = true;
+    }
+
     for(int i = 1; i < argc; ++i) {
         std::string_view arg(argv[i]);
 
