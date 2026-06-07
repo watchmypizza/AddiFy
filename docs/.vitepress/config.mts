@@ -1,10 +1,10 @@
 import { defineConfig, ScaffoldThemeType } from 'vitepress'
-
 // https://vitepress.dev/reference/site-config
 export default defineConfig ({
   title: "Spotify GraphQL",
   description: "Documentating the undocumented Spotify GraphQL backend API for everyone to use.",
   base: "/AddiFy/",
+  head: [['link', {rel: 'icon', href: '/AddiFy/images/favicon.ico'}]],
   markdown: {
     image: {
       lazyLoading: true
