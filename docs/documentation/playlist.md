@@ -3,22 +3,24 @@
 Everything is the operationName variable inside the data variable of a request.
 
 ## `addToPlaylist`
+::: details Documented Request
 * extensions:
     * persistedQuery:
-        * sha256Hash: "47b2a1234b17748d332dd0431534f22450e9ecbb3d5ddcdacbd83368636a0990"
-        * version: 1
+        * sha256Hash: `"47b2a1234b17748d332dd0431534f22450e9ecbb3d5ddcdacbd83368636a0990" (string)`
+        * version: `1 (int)`
 
-* operationName: "addToPlaylist"
+* operationName: `"addToPlaylist" (string)`
 
 * variables:
     * newPosition:
-        * fromUId: null
-        * moveType: "BOTTOM_OF_PLAYLIST" or "TOP_OF_PLAYLIST"
+        * fromUId: `null (unknown, presume long or int)`
+        * moveType: `"BOTTOM_OF_PLAYLIST" ("TOP_OF_PLAYLIST" NOT CONFIRMED) (string)`
 
     * playlistItemUris:
-        * \[stringList\]: spotify:track:xxxxxxxxxxxxxxxxxxxxxx
+        * \[stringList\]: `"spotify:track:xxxxxxxxxxxxxxxxxxxxxx" (string)`
 
-    * playlistUri: spotify:playlist:xxxxxxxxxxxxxxxxxxxxxx
+    * playlistUri: `"spotify:playlist:xxxxxxxxxxxxxxxxxxxxxx" (string)`
+:::
 
 :::details Raw Request
 ```json
@@ -44,18 +46,40 @@ Everything is the operationName variable inside the data variable of a request.
 ```
 :::
 
+### Response
+
+::: details Documented Response
+* data:
+	* addItemsToPlaylist:
+		* __typename: `"AddItemsToPlaylistPayload" (string)`
+:::
+
+::: details Raw Response
+```json
+{
+	"data": {
+		"addItemsToPlaylist": {
+			"__typename": "AddItemsToPlaylistPayload"
+		}
+	}
+}
+```
+:::
+
 ## `removeFromPlaylist`
+::: details Documented Request
 * extensions:
     * persistedQuery:
-        * sha256Hash: "47b2a1234b17748d332dd0431534f22450e9ecbb3d5ddcdacbd83368636a0990"
-        * version: 1
+        * sha256Hash: `"47b2a1234b17748d332dd0431534f22450e9ecbb3d5ddcdacbd83368636a0990" (string)`
+        * version: `1 (int)`
 
-* operationName: "removeFromPlaylist"
+* operationName: `"removeFromPlaylist" (string)`
 
 * variables:
-    * playlistUri: "spotify:playlist:xxxxxxxxxxxxxxxxxxxxxx"
+    * playlistUri: `"spotify:playlist:xxxxxxxxxxxxxxxxxxxxxx" (string)`
     * uids:
-        * \[stringList\]: "songUid"
+        * \[stringList\]: `"songUid" (string)`
+:::
 
 :::details Raw Request
 ```json
@@ -78,15 +102,32 @@ Everything is the operationName variable inside the data variable of a request.
 :::
 
 ### Response
+::: details Documented Response
+* data:
+	* removeItemsFromPlaylist:
+		* __typename: `"RemoveItemsFromPlaylistPayload" (string)`
+:::
 
+::: details Raw Response
+```json
+{
+	"data": {
+		"removeItemsFromPlaylist": {
+			"__typename": "RemoveItemsFromPlaylistPayload"
+		}
+	}
+}
+```
+:::
 
 ## `fetchPlaylist`
+::: details Documented Request
 * extensions:
     * persistedQuery:
-        * sha256Hash: "a65e12194ed5fc443a1cdebed5fabe33ca5b07b987185d63c72483867ad13cb4"
-        * version: 1
+        * sha256Hash: `"a65e12194ed5fc443a1cdebed5fabe33ca5b07b987185d63c72483867ad13cb4" (string)`
+        * version: `1 (int)`
 
-* operationName: "fetchPlaylist"
+* operationName: `"fetchPlaylist" (string)`
 
 * variables:
     * enableWatchFeedEntrypoint: `true (bool)`
@@ -94,6 +135,7 @@ Everything is the operationName variable inside the data variable of a request.
     * limit: `25 (int)`
     * offset: `0 (int)`
     * uri: `spotify:playlist:xxxxxxxxxxxxxxxxxxxxxx`
+:::
 
 :::details Raw Request
 ```json
