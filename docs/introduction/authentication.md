@@ -73,7 +73,7 @@ If you've never used DevTools before, get familiar with the [Firefox DevTools Do
 
 2. Press `F12` (or `Ctrl+Shift+I` / `Cmd+Option+I` on Mac) to open the DevTools, and switch to the **Network** tab.
 
-![Network Tab](images/networkingtab.png)
+![Network Tab](/images/networkingtab.png)
 
 3. At first, you will see a massive stream of random network garbage. To fix this, locate the **Filter** input field and paste the Spotify GraphQL endpoint URL:
 
