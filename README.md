@@ -1,3 +1,5 @@
+![AddiFy](Images/addify.png)
+
 # AddiFy
 
 A high-performance C++ utility designed to rapidly clone and inject an entire artist's discography into your designated Spotify playlist.
